@@ -113,8 +113,8 @@ dialog .toast{position:fixed}
   <div class="phone"><span>+91</span><input id="waNum" type="tel" inputmode="numeric" maxlength="20" placeholder="10 अंकों का नंबर" autocomplete="tel"><button type="button" class="ghost" id="waCopy" style="width:auto;padding:0 12px" title="नंबर कॉपी करें">📋</button></div>
   <div class="err" id="waErr"></div>
   <div id="waCopied" class="copied" hidden></div>
-  <div id="waNumShow" class="numshow" hidden><div>कॉपी अपने-आप नहीं हुआ। नीचे वाले नंबर को <b>उंगली से दबाकर रखें</b> और <b>Copy</b> चुनें:</div><input id="waNumBig" readonly></div>
-  <div id="waEnv" class="envwarn" hidden>⚠️ यह फ़ाइल किसी साधारण व्यूअर में खुली है — यहाँ <b>कॉपी</b> और <b>फोटो शेयर</b> काम नहीं करते। फ़ाइल को <b>Chrome</b> में खोलें (फ़ाइल पर ⋮ → Open with → Chrome), या Chrome में इसका https लिंक खोलें।</div>
+  <div id="waNumShow" class="numshow" hidden><div>फ़ाइल सीधे फ़ोन से खुली है, इसलिए ब्राउज़र अपने-आप कॉपी नहीं करने देता। नीचे वाले नंबर को <b>उंगली से दबाकर रखें</b> और <b>Copy</b> चुनें:</div><input id="waNumBig" readonly></div>
+  <div id="waEnv" class="envwarn" hidden>⚠️ यह फ़ाइल फ़ोन से सीधे खुली है — ब्राउज़र ऐसी फ़ाइल में <b>अपने-आप कॉपी</b> और <b>फोटो शेयर</b> बंद रखता है। ये दोनों सिर्फ़ <b>https लिंक</b> से खोलने पर चलते हैं।</div>
   <div class="hint">टेक्स्ट पर्ची के लिए नंबर ज़रूरी है। फोटो पर्ची में नंबर अपने-आप कॉपी हो जाएगा — WhatsApp में खोज (🔍) में पेस्ट करें।</div>
   <div class="prev"><img id="slipImg" alt="पर्ची की फोटो"></div>
   <div class="acts"><button type="button" class="img" id="waImg">📷 फोटो सहित भेजें</button><button type="button" class="ghost" id="waCancel">रद्द करें</button><button type="submit" class="send" id="waSend">💬 सिर्फ़ टेक्स्ट भेजें</button></div>
@@ -269,7 +269,7 @@ function openSlip(i){
   cur = DATA[i];
   $("waWho").textContent = `${cur[3]} · वार्ड ${cur[0]} · मकान ${cur[6]}`;
   $("waNum").value = ""; $("waErr").textContent = ""; $("waNumShow").hidden = true; $("waCopied").hidden = true; lastCopied = "";
-  $("waEnv").hidden = !!(navigator.share && navigator.canShare);
+  $("waEnv").hidden = SECURE && !!(navigator.share && navigator.canShare);
   $("waText").value = slipText(cur);
   makeImage();
   $("waDlg").showModal();
@@ -409,14 +409,16 @@ function fallbackCopy(s){
   ta.remove(); if(act && act.focus) try{ act.focus({preventScroll:true}); }catch(e){}
   return ok;
 }
+const SECURE = !!(window.isSecureContext && navigator.clipboard && navigator.clipboard.writeText);
 async function copyNum(n){
+  if(!SECURE){ fallbackCopy(n); return false; }   // local file: browser blocks copy, so always offer the manual box
   if(fallbackCopy(n)) return true;            // synchronous first, while the tap still counts
   try{ await navigator.clipboard.writeText(n); return true; }catch(e){ return false; }
 }
 function showNum(n){
   $("waNumBig").value = n; $("waNumShow").hidden = false; $("waCopied").hidden = true;
   try{ $("waNumBig").focus(); $("waNumBig").select(); }catch(e){}
-  toast("कॉपी नहीं हो पाया — पीले बॉक्स से नंबर कॉपी करें", 4000);
+  toast("नंबर अपने-आप कॉपी नहीं हो सकता — पीले बॉक्स को दबाकर रखें → Copy", 4000);
 }
 $("waCopy").addEventListener("click", async () => {
   const n = cleanNum($("waNum").value);
